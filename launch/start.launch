@@ -2,5 +2,10 @@
 
 <launch>
   <node name="carla_ctl" pkg="carla_ctl" type="carla_ctl" args="_camera_sensor_x:=0.0 _camera_sensor_y:=2.0 _camera_sensor_z:=3.0" output="screen"/>
-  <node name="olny_cv" pkg="olny_cv" type="LKAS_node" output="screen"/>
+  <node name="olny_cv" pkg="olny_cv" type="LKAS_node" output="screen">
+   <param name="Kp" type="double" value="0.5"/>
+   <param name="Ki" type="double" value="0.1"/>
+   <param name="Kd" type="double" value="0.2"/>
+   <param name="speed"  type="double" value="2.0"/>
+  </node>
 </launch>

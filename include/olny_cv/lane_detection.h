@@ -15,6 +15,9 @@ public:
   vector<vector<Point>> get_value();
   vector<vector<Point>> out_vec;
   
+  bool flag;
+  bool get_flag();
+  
 private:
   int img_x;
   int window_height;
@@ -25,9 +28,13 @@ private:
   vector<int> nothing_pixel_right_x;
   vector<int> nothing_pixel_y;
 
+  double threshold_variance = 1.0;
+
+
   vector<Point> left;
   vector<Point> right;
   vector<Point> center;
+
 
   void detect_nothing();
   Vec3f fitPoly(const std::vector<int>& y, const std::vector<int>& x, int order);

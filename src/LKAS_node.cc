@@ -10,15 +10,26 @@ class LKAS_node
 {
 public:
   LKAS_node(ros::NodeHandle &nh)
-  :biv_constructor(),controller()
+  :biv_constructor(),controller(0.0,0.0,0.0,0.0)
   {
+    nh.getParam("Kp", Kp);
+    nh.getParam("Ki", Ki);
+    nh.getParam("Kd", Kd);
+    nh.getParam("speed", speed);
 
     ROS_INFO("===== LKAS Node START =====");
+    ROS_INFO("Kp parameter: %f", Kp);
+    ROS_INFO("Ki parameter: %f", Ki);
+    ROS_INFO("Kd parameter: %f", Kd);
+    ROS_INFO("speed: %f", speed);
+
     debug = false;
 
     // Initialize the subscriber
     image_sub_ = nh.subscribe("/usb_cam/image_raw", 10, &LKAS_node::Img_CB, this);
     xycar_pub = nh.advertise<xycar_msgs::xycar_motor>("/xycar_motor", 10);
+
+    controller = Xyc_control(Kp, Ki, Kd, speed);
   }
 
 private:
@@ -36,20 +47,26 @@ private:
   
   //debug options
   bool debug;
+  
+  // gain setting
+  double Kp;
+  double Ki;
+  double Kd;
+  double speed;
 
   // Callback function to process image data
   void Img_CB(const sensor_msgs::Image::ConstPtr& msg)
   {
     std_msgs::Header msg_header = msg->header;
     std::string frame_id = msg_header.frame_id.c_str();
-    ROS_INFO_STREAM("New Image from " << frame_id);
+    // ROS_INFO_STREAM("New Image from " << frame_id);
     
     cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
     in_img = cv_ptr->image;
     cv::imshow("original view", in_img);
 
     biv = biv_constructor.bird_eye_generator(in_img);
-    cv::imshow("Bird eye view(filtered)", biv);
+    // cv::imshow("Bird eye view(filtered)", biv);
     output = controller.set_control(biv);
 
     xycar_pub.publish(output);
@@ -66,7 +83,8 @@ private:
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "LKAS");
-  ros::NodeHandle nh;
+  // ros::NodeHandle nh;
+  ros::NodeHandle nh("~");
   
   // Create an instance of LKAS_node
   LKAS_node lkas_node(nh);

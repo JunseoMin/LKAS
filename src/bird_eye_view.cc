@@ -38,14 +38,35 @@ cv::Mat BirdEyeView::bird_eye_generator(cv::Mat in_img_){
   cv::cvtColor(in_img_,_out_img,CV_8UC1);
 
   cv::warpPerspective(in_img_,in_img_,perspective_mat,cv::Point2i(960,480));
-  cv::imshow("color birdeye",in_img_);
-  ROS_INFO("==== image converted ====");  
+  // cv::imshow("color birdeye",in_img_);
+  // ROS_INFO("==== image converted ====");  
 
   // IMG FILT SIZE : 500*290smoothed_angle
   // ORIGINAL : 800 * 600
   BirdEyeView::edge_filter(_out_img); // get edge filtered converted image
                                       // _out_img 8UC1 image 
+
+
   cv::warpPerspective(_out_img,_out_img,perspective_mat,cv::Point2i(960,480));
+
+  // cv::Mat labels, stats, centroids;
+  // cv::Mat filtered_image = cv::Mat::zeros(_out_img.size(), CV_8UC1);
+  
+  // int n_labels = cv::connectedComponentsWithStats(_out_img, labels, stats, centroids, 8, CV_32S);
+  // int min_size = 100;
+
+  // for (int i = 1; i < n_labels; ++i) {
+  //   int area = stats.at<int>(i, cv::CC_STAT_AREA);
+  //     if (area >= min_size) {
+  //       for (int y = 0; y < labels.rows; ++y) {
+  //         for (int x = 0; x < labels.cols; ++x) {
+  //           if (labels.at<int>(y, x) == i) {
+  //             filtered_image.at<uchar>(y, x) = 255;
+  //           }
+  //         }
+  //       }
+  //     }
+  // }
 
   return _out_img;
 }

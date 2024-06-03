@@ -7,13 +7,15 @@ LaneDetection::LaneDetection(int img_x, int window_height, int nwindows) {
   this->img_x = img_x;
   this->window_height = window_height;
   this->nwindows = nwindows;
+  this->flag = false;
+
   detect_nothing();
 }
 
 void LaneDetection::detect_nothing() {
   //in case no lane detected
   nothing_left_x_base = round(img_x * 0.140625);
-  nothing_right_x_base = img_x - round(img_x * 0.140625);
+  nothing_right_x_base = img_x - round(img_x * 0.140625) - 10;
 
   nothing_pixel_left_x.assign(nwindows, round(img_x * 0.140625));
   nothing_pixel_right_x.assign(nwindows, img_x - round(img_x * 0.140625));
@@ -60,7 +62,7 @@ cv::Mat LaneDetection::window_search(const cv::Mat& binary_line) {
   cv::Mat out_img;
   cv::cvtColor(gray_image, out_img, cv::COLOR_GRAY2BGR);
 
-  int margin = 80;
+  int margin = 40;
   int min_pix = round((margin * 2 * window_height) * 0.0031);
 
   std::vector<cv::Point> lane_pixels;
@@ -119,12 +121,17 @@ cv::Mat LaneDetection::window_search(const cv::Mat& binary_line) {
       right_y.push_back(lane_pixel_y[idx]);
   }
 
+  // if (left_x.end() == nothing_pixel_left_x || left_y.end() == nothing_pixel_left_x ){
+  //   flag=true;
+  // }
+
   if (left_x.empty() && right_x.empty()) 
   {
     left_x = nothing_pixel_left_x;
     left_y = nothing_pixel_y;
     right_x = nothing_pixel_right_x;
     right_y = nothing_pixel_y;
+    flag=true;
   } 
   else 
   {
@@ -152,8 +159,8 @@ cv::Mat LaneDetection::window_search(const cv::Mat& binary_line) {
   std::vector<double> left_fit_x(100), right_fit_x(100), center_fit_x(100);
   for (int i = 0; i < 100; ++i) {
       double y = plot_y[i];
-      left_fit_x[i] = left_fit[0] * y * y + left_fit[1] * y + left_fit[2];
-      right_fit_x[i] = right_fit[0] * y * y + right_fit[1] * y + right_fit[2];
+      left_fit_x[i] = left_fit[2] * y * y + left_fit[1] * y + left_fit[0];
+      right_fit_x[i] = right_fit[2] * y * y + right_fit[1] * y + right_fit[0];
       center_fit_x[i] = (left_fit_x[i] + right_fit_x[i]) / 2;
   }
 
@@ -195,4 +202,13 @@ cv::Vec3f LaneDetection::fitPoly(const std::vector<int>& y, const std::vector<in
   cv::solve(X, Y, coefficients, cv::DECOMP_SVD);
 
   return cv::Vec3f(coefficients.at<double>(0, 0), coefficients.at<double>(1, 0), coefficients.at<double>(2, 0));
+}
+
+bool LaneDetection::get_flag(){
+  if (flag) 
+  {
+    flag = false;
+    return true;
+  }
+  return false;
 }
