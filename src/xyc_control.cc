@@ -28,29 +28,28 @@ xycar_msgs::xycar_motor Xyc_control::set_control(const cv::Mat& in_img){
   lane_res = _detector.get_value();
   
   // 레퍼런스 값 계산
-  double reference = (lane_res[2][3].x + lane_res[2][4].x*(0.5) + lane_res[2][5].x*(0.5) + lane_res[2][6].x + lane_res[2][7].x*(1) + lane_res[2][8].x*(1.5) + lane_res[2][9].x*(1.5) + lane_res[2][10].x - 480 * 8) / 300.0;
+  double reference = (lane_res[2][3].x*(0.7) + lane_res[2][4].x*(0.7) + lane_res[2][5].x*(0.7) + lane_res[2][6].x*(1.3) + lane_res[2][7].x*(1.3) + lane_res[2][8].x*(1.3) + lane_res[2][9].x + lane_res[2][10].x - 480 * 8) / 400.0;
   ROS_INFO("reference input: %f",reference);
   
   // I (Integral) 제어 계산
   double sum_diff = 0.0;
+  
   for (size_t i = 0; i < prev_angles.size() - 1; ++i) {
     double diff = prev_angles[i + 1] - prev_angles[i];
     sum_diff += diff;
-    // cout<<sum_diff<<",";
-    // cout<<diff<<endl;
   }
 
   double avg_diff = sum_diff / (prev_angles.size() - 1);
   ROS_INFO("avg diff: %f",avg_diff);
 
   // I (Integral) 항 계산
-  integral += avg_diff;
+  integral += sum_diff;
 
   // P (Proportional) 항 계산
   double proportional = kp * reference;
   ROS_INFO("p term: %f",proportional);
-
   // D (Derivative) 항 계산
+
   double derivative = kd * avg_diff;
   ROS_INFO("d term: %f",derivative);
 
@@ -65,20 +64,31 @@ xycar_msgs::xycar_motor Xyc_control::set_control(const cv::Mat& in_img){
   prev_angles[prev_angles_idx] = _pub_motor.angle;
   prev_angles_idx = (prev_angles_idx + 1) % prev_angles.size();
   ROS_INFO("idx: %d",prev_angles_idx);
-  // 출력값 조정
+
   _pub_motor.angle = control_output;
 
-  // 각도 범위 제한
   if(_pub_motor.angle > 0.3){
     _pub_motor.angle = 0.3;
   }
   if (_pub_motor.angle < -0.3){
     _pub_motor.angle = -0.3;
   }
+
+  // if (abs(sum_diff) > 0.00001){
+  //   ROS_WARN("speed down");
+  //   _pub_motor.speed = _prev_motor.speed - 0.5;
+  // }
   
+  // if(abs(sum_diff)<0.000001){
+  //   ROS_WARN("speed up");
+  // }
+
   ROS_INFO("angular(published): %f", _pub_motor.angle);
+  ROS_INFO("linear(published): %f", _pub_motor.speed);
   ROS_INFO("=====================");
-  _pub_motor.speed = speed; // 속도 설정
+  // _pub_motor.speed = speed; // 속도 설정
+  _pub_motor.speed = speed;
+  
   _prev_motor = _pub_motor;
   return _pub_motor;
 }

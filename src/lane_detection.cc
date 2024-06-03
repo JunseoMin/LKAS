@@ -14,11 +14,11 @@ LaneDetection::LaneDetection(int img_x, int window_height, int nwindows) {
 
 void LaneDetection::detect_nothing() {
   //in case no lane detected
-  nothing_left_x_base = round(img_x * 0.140625);
-  nothing_right_x_base = img_x - round(img_x * 0.140625) - 10;
+  nothing_left_x_base = round(img_x * 0.45);
+  nothing_right_x_base = img_x - round(img_x * 0.45);
 
-  nothing_pixel_left_x.assign(nwindows, round(img_x * 0.140625));
-  nothing_pixel_right_x.assign(nwindows, img_x - round(img_x * 0.140625));
+  nothing_pixel_left_x.assign(nwindows, round(img_x * 0.45));
+  nothing_pixel_right_x.assign(nwindows, img_x - round(img_x * 0.45));
 
   for (int index = 0; index < nwindows; ++index) {
     nothing_pixel_y.push_back(round(window_height / 2) * index);
@@ -200,7 +200,7 @@ cv::Vec3f LaneDetection::fitPoly(const std::vector<int>& y, const std::vector<in
 
   cv::Mat coefficients;
   cv::solve(X, Y, coefficients, cv::DECOMP_SVD);
-
+  
   return cv::Vec3f(coefficients.at<double>(0, 0), coefficients.at<double>(1, 0), coefficients.at<double>(2, 0));
 }
 
