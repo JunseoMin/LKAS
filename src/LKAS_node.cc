@@ -59,7 +59,7 @@ private:
       debug = false;
       ROS_INFO("image saved!");
     }
-    cv::waitKey(0);
+    cv::waitKey(1);
   }
 };
 

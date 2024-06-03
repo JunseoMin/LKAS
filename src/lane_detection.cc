@@ -11,6 +11,7 @@ LaneDetection::LaneDetection(int img_x, int window_height, int nwindows) {
 }
 
 void LaneDetection::detect_nothing() {
+  //in case no lane detected
   nothing_left_x_base = round(img_x * 0.140625);
   nothing_right_x_base = img_x - round(img_x * 0.140625);
 
@@ -167,6 +168,11 @@ cv::Mat LaneDetection::window_search(const cv::Mat& binary_line) {
   cv::polylines(out_img, left, false, cv::Scalar(0, 0, 255), 5);
   cv::polylines(out_img, right, false, cv::Scalar(0, 255, 0), 5);
 
+  out_vec.clear();
+  out_vec.push_back(left);
+  out_vec.push_back(right);
+  out_vec.push_back(center);
+  
   return out_img;
 }
 
