@@ -1,7 +1,7 @@
 #include "olny_cv/xyc_control.h"
 
 Xyc_control::Xyc_control(const bool stanly,const double Kp,const double Ki,const double Kd,const double s_gain,const double speed)
-:stanly(stanly),kp(Kp),ki(Ki),kd(Kd),s_gain(s_gain),speed(speed),_detector(940,50,26)
+:stanly(stanly),kp(Kp),ki(Ki),kd(Kd),s_gain(s_gain),speed(speed),_detector(940,20,24)
 {
   this->debug = true;
   this->img_x_2 = 470.0;
@@ -30,7 +30,7 @@ xycar_msgs::xycar_motor Xyc_control::set_control(const cv::Mat& in_img){
   lane_res = _detector.get_value();
   
   // 레퍼런스 값 계산
-  double reference = (lane_res[2][3].x*(0.7) + lane_res[2][4].x*(0.7) + lane_res[2][5].x*(0.7) + lane_res[2][6].x*(1.3) + lane_res[2][7].x*(1.3) + lane_res[2][8].x*(1.3) + lane_res[2][9].x + lane_res[2][10].x - 480 * 8) / 400.0;
+  double reference = (lane_res[2][5].x*(0.7) + lane_res[2][6].x*(0.7) + lane_res[2][7].x*(0.7) + lane_res[2][8].x*(1.3) + lane_res[2][9].x*(1.3) + lane_res[2][10].x*(1.3)+ lane_res[2][11].x*(1.3)+ lane_res[2][12].x*(1.3)+ lane_res[2][13].x*(1.3) + lane_res[2][14].x*(0.7)+ lane_res[2][15].x*(0.7)+ lane_res[2][16].x*(0.7) - 480 * 11) / 400.0;
   ROS_INFO("reference input: %f",reference);
   
   // I (Integral) 제어 계산
@@ -96,26 +96,30 @@ xycar_msgs::xycar_motor Xyc_control::set_control_stanly(const cv::Mat& in_img){
 
   lane_res = _detector.get_value();
   
-  double lane_angle = atan2(lane_res[2][3].y - lane_res[2][4].y, lane_res[2][3].x - lane_res[2][4].x);
-  double lane_angle_degrees = lane_angle * 180 / M_PI;
+  double deb = lane_res[2][3].x;
+  deb += lane_res[2][4].x;
+  deb += lane_res[2][5].x;
+  deb += lane_res[2][6].x;
 
-  double psi_term = lane_angle - M_PI / 2;
-  
-  while (psi_term > M_PI) {
-    psi_term -= 2 * M_PI;
-  }
-  while (psi_term < -M_PI) {
-    psi_term += 2 * M_PI;
-  }
+  double psi_term = (470*4 - deb) / (4*940); //average error from window 3,4 normalized by image size
+  ROS_INFO("psi term: %f", psi_term);
   
   // lane center - image_x center pixel
-  double error_pixel = (lane_res[2][3].x*(0.7) + lane_res[2][4].x*(0.7) + lane_res[2][5].x*(0.7) + lane_res[2][6].x*(1.3) + lane_res[2][7].x*(1.3) + lane_res[2][8].x*(1.3) + lane_res[2][9].x + lane_res[2][10].x - 480 * 8);
+  double error_pixel = (lane_res[2][5].x*(0.7) + lane_res[2][6].x*(0.7) + lane_res[2][7].x*(0.7) + lane_res[2][8].x*(1.3) + lane_res[2][9].x*(1.3) + lane_res[2][10].x*(1.3)+ lane_res[2][11].x*(1.3)+ lane_res[2][12].x*(1.3)+ lane_res[2][13].x*(1.3) + lane_res[2][14].x*(0.7)+ lane_res[2][15].x*(0.7)+ lane_res[2][16].x*(0.7) - 470 * 11);
+  error_pixel /= 940; //normalize error pixel
 
-  ROS_INFO("reference: %f", error_pixel);
+  ROS_INFO("error in: %f", error_pixel);
   
-  double cte = error_pixel / 940.0; //normalize
+  double gap = 15.0;  // pixel distance from left/right tier to center
+
+  if (error_pixel > 0){
+    gap *= -1;
+  }
+
+  double cte = error_pixel + gap; //normalized error pixel to cte
   
-  double control_output = psi_term + atan2(s_gain * cte, speed);
+  double control_output = psi_term + atan2(s_gain * error_pixel, speed);
+  ROS_INFO("stanly term: %f", s_gain);
 
   // Set the motor angle
   _pub_motor.angle = control_output;

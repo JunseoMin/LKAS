@@ -62,7 +62,7 @@ cv::Mat LaneDetection::window_search(const cv::Mat& binary_line) {
   cv::Mat out_img;
   cv::cvtColor(gray_image, out_img, cv::COLOR_GRAY2BGR);
 
-  int margin = 40;
+  int margin = 35;
   int min_pix = round((margin * 2 * window_height) * 0.0031);
 
   std::vector<cv::Point> lane_pixels;

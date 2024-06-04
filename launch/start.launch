@@ -4,7 +4,8 @@
   <node name="carla_ctl" pkg="carla_ctl" type="carla_ctl" args="_camera_sensor_x:=0.0 _camera_sensor_y:=0.0 _camera_sensor_z:=3.0 _lider_sensor_x:=0.0 _lider_sensor_y:=-2.0 _lider_sensor_z:=3.0" output="screen"/>
   <node name="olny_cv" pkg="olny_cv" type="LKAS_node" output="screen">
    <param name="debug" type="bool" value="false"/>
-   <param name="stanly" type="bool" value="false"/>
+   <!-- true if want to use stanly -->
+   <param name="stanly" type="bool" value="true"/>  
 
    <param name="s_gain" type="double" value="1.0"/>
    
