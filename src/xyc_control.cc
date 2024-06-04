@@ -29,11 +29,11 @@ xycar_msgs::xycar_motor Xyc_control::set_control(const cv::Mat& in_img){
 
   lane_res = _detector.get_value();
   
-  // 레퍼런스 값 계산
-  double reference = (lane_res[2][5].x*(0.7) + lane_res[2][6].x*(0.7) + lane_res[2][7].x*(0.7) + lane_res[2][8].x*(1.3) + lane_res[2][9].x*(1.3) + lane_res[2][10].x*(1.3)+ lane_res[2][11].x*(1.3)+ lane_res[2][12].x*(1.3)+ lane_res[2][13].x*(1.3) + lane_res[2][14].x*(0.7)+ lane_res[2][15].x*(0.7)+ lane_res[2][16].x*(0.7) - 480 * 11) / 400.0;
-  ROS_INFO("reference input: %f",reference);
+  // reference
+  double reference = (lane_res[2][5].x*(0.7) + lane_res[2][6].x*(0.7) + lane_res[2][7].x*(0.7) + lane_res[2][8].x*(1.3) + lane_res[2][9].x*(1.3) + lane_res[2][10].x*(1.3)+ lane_res[2][11].x*(1.3)+ lane_res[2][12].x*(1.3)+ lane_res[2][13].x*(1.3) + lane_res[2][14].x*(0.7)+ lane_res[2][15].x*(0.7)+ lane_res[2][16].x*(0.7) - 480 * 11) / 940;
+  ROS_INFO("reference input: %f",reference);  // normalized ref
   
-  // I (Integral) 제어 계산
+  // I term
   double sum_diff = 0.0;
   
   for (size_t i = 0; i < prev_angles.size() - 1; ++i) {
@@ -63,9 +63,8 @@ xycar_msgs::xycar_motor Xyc_control::set_control(const cv::Mat& in_img){
   double control_output = proportional + integral_term + derivative;
 
   // 이전 각도 배열 갱신
-  prev_angles[prev_angles_idx] = _pub_motor.angle;
+  prev_angles[prev_angles_idx] = reference - 0.500;
   prev_angles_idx = (prev_angles_idx + 1) % prev_angles.size();
-  ROS_INFO("idx: %d",prev_angles_idx);
 
   _pub_motor.angle = control_output;
 
