@@ -10,17 +10,37 @@ class LKAS_node
 {
 public:
   LKAS_node(ros::NodeHandle &nh)
-  :biv_constructor(),controller(0.0,0.0,0.0,0.0)
+  :biv_constructor(),controller(false,0.0,0.0,0.0,0.0,0.0)
   {
     nh.getParam("Kp", Kp);
     nh.getParam("Ki", Ki);
     nh.getParam("Kd", Kd);
+    nh.getParam("stanly", stanly);
+    nh.getParam("s_gain", s_gain);
+
     nh.getParam("speed", speed);
+    nh.getParam("debug", debug);
 
     ROS_INFO("===== LKAS Node START =====");
-    ROS_INFO("Kp parameter: %f", Kp);
-    ROS_INFO("Ki parameter: %f", Ki);
-    ROS_INFO("Kd parameter: %f", Kd);
+    ROS_INFO("default: PID");
+
+    if(stanly)
+    {
+      ROS_INFO("== Stanly Drive selected ==");
+      ROS_INFO("stanly gain: %f", s_gain);
+      Kp = 0.0;
+      Ki = 0.0;
+      Kd = 0.0;
+    }
+    else
+    {
+      ROS_INFO("=== PID Drive selected ===");
+      ROS_INFO("Kp parameter: %f", Kp);
+      ROS_INFO("Ki parameter: %f", Ki);
+      ROS_INFO("Kd parameter: %f", Kd);
+      s_gain = 0.0;
+    };
+
     ROS_INFO("speed: %f", speed);
 
     debug = false;
@@ -29,7 +49,7 @@ public:
     image_sub_ = nh.subscribe("/usb_cam/image_raw", 10, &LKAS_node::Img_CB, this);
     xycar_pub = nh.advertise<xycar_msgs::xycar_motor>("/xycar_motor", 10);
 
-    controller = Xyc_control(Kp, Ki, Kd, speed);
+    controller = Xyc_control(stanly, Kp, Ki, Kd, s_gain, speed);
   }
 
 private:
@@ -47,11 +67,17 @@ private:
   
   //debug options
   bool debug;
+
+  // controller param
+  bool stanly;
   
   // gain setting
   double Kp;
   double Ki;
   double Kd;
+  double s_gain;
+
+  // speed param
   double speed;
 
   // Callback function to process image data
@@ -67,7 +93,12 @@ private:
 
     biv = biv_constructor.bird_eye_generator(in_img);
     // cv::imshow("Bird eye view(filtered)", biv);
-    output = controller.set_control(biv);
+    if (stanly){
+      output = controller.set_control_stanly(biv);
+    }
+    else{
+      output = controller.set_control(biv);
+    }
 
     xycar_pub.publish(output);
     

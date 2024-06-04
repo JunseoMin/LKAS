@@ -3,9 +3,15 @@
 <launch>
   <node name="carla_ctl" pkg="carla_ctl" type="carla_ctl" args="_camera_sensor_x:=0.0 _camera_sensor_y:=0.0 _camera_sensor_z:=3.0 _lider_sensor_x:=0.0 _lider_sensor_y:=-2.0 _lider_sensor_z:=3.0" output="screen"/>
   <node name="olny_cv" pkg="olny_cv" type="LKAS_node" output="screen">
-   <param name="Kp" type="double" value="0.02"/>
-   <param name="Ki" type="double" value="0.4"/>
-   <param name="Kd" type="double" value="0.01"/>
-   <param name="speed"  type="double" value="0.65"/>
+   <param name="debug" type="bool" value="false"/>
+   <param name="stanly" type="bool" value="false"/>
+
+   <param name="s_gain" type="double" value="1.0"/>
+   
+   <param name="Kp" type="double" value="0.5"/>
+   <param name="Ki" type="double" value="0.05"/>
+   <param name="Kd" type="double" value="0.1"/>
+
+   <param name="speed"  type="double" value="0.7"/>
   </node>
 </launch>

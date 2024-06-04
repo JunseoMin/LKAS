@@ -1,7 +1,7 @@
 #include "olny_cv/xyc_control.h"
 
-Xyc_control::Xyc_control(const double Kp,const double Ki,const double Kd,const double speed)
-:kp(Kp),ki(Ki),kd(Kd),speed(speed),_detector(940,50,26)
+Xyc_control::Xyc_control(const bool stanly,const double Kp,const double Ki,const double Kd,const double s_gain,const double speed)
+:stanly(stanly),kp(Kp),ki(Ki),kd(Kd),s_gain(s_gain),speed(speed),_detector(940,50,26)
 {
   this->debug = true;
   this->img_x_2 = 470.0;
@@ -11,6 +11,8 @@ Xyc_control::Xyc_control(const double Kp,const double Ki,const double Kd,const d
   prev_angles.fill(0.0);
   this->integral = 0.0;
   this->prev_angles_idx = 0;
+  this->s_gain = s_gain;
+
 }
 
 Xyc_control::~Xyc_control()
@@ -42,22 +44,22 @@ xycar_msgs::xycar_motor Xyc_control::set_control(const cv::Mat& in_img){
   double avg_diff = sum_diff / (prev_angles.size() - 1);
   ROS_INFO("avg diff: %f",avg_diff);
 
-  // I (Integral) 항 계산
+  // I (Integral) term
   integral += sum_diff;
 
-  // P (Proportional) 항 계산
+  // P (Proportional) term
   double proportional = kp * reference;
   ROS_INFO("p term: %f",proportional);
-  // D (Derivative) 항 계산
+  // D (Derivative) term
 
   double derivative = kd * avg_diff;
   ROS_INFO("d term: %f",derivative);
 
-  // I (Integral) 항 계산
+  // I (Integral) term
   double integral_term = ki * integral;
   ROS_INFO("i term: %f",integral_term);
 
-  // PID 제어 계산
+  // PID
   double control_output = proportional + integral_term + derivative;
 
   // 이전 각도 배열 갱신
@@ -74,15 +76,6 @@ xycar_msgs::xycar_motor Xyc_control::set_control(const cv::Mat& in_img){
     _pub_motor.angle = -0.3;
   }
 
-  // if (abs(sum_diff) > 0.00001){
-  //   ROS_WARN("speed down");
-  //   _pub_motor.speed = _prev_motor.speed - 0.5;
-  // }
-  
-  // if(abs(sum_diff)<0.000001){
-  //   ROS_WARN("speed up");
-  // }
-
   ROS_INFO("angular(published): %f", _pub_motor.angle);
   ROS_INFO("linear(published): %f", _pub_motor.speed);
   ROS_INFO("=====================");
@@ -90,5 +83,54 @@ xycar_msgs::xycar_motor Xyc_control::set_control(const cv::Mat& in_img){
   _pub_motor.speed = speed;
   
   _prev_motor = _pub_motor;
+  return _pub_motor;
+}
+
+xycar_msgs::xycar_motor Xyc_control::set_control_stanly(const cv::Mat& in_img){
+  //set control foward, angular
+  ROS_INFO("==== Stanly start ====");
+  lane_img = _detector.window_search(in_img);
+
+  cv::imshow("lane detection", lane_img);
+  cv::waitKey(1);
+
+  lane_res = _detector.get_value();
+  
+  double lane_angle = atan2(lane_res[2][3].y - lane_res[2][4].y, lane_res[2][3].x - lane_res[2][4].x);
+  double lane_angle_degrees = lane_angle * 180 / M_PI;
+
+  double psi_term = lane_angle - M_PI / 2;
+  
+  while (psi_term > M_PI) {
+    psi_term -= 2 * M_PI;
+  }
+  while (psi_term < -M_PI) {
+    psi_term += 2 * M_PI;
+  }
+  
+  // lane center - image_x center pixel
+  double error_pixel = (lane_res[2][3].x*(0.7) + lane_res[2][4].x*(0.7) + lane_res[2][5].x*(0.7) + lane_res[2][6].x*(1.3) + lane_res[2][7].x*(1.3) + lane_res[2][8].x*(1.3) + lane_res[2][9].x + lane_res[2][10].x - 480 * 8);
+
+  ROS_INFO("reference: %f", error_pixel);
+  
+  double cte = error_pixel / 940.0; //normalize
+  
+  double control_output = psi_term + atan2(s_gain * cte, speed);
+
+  // Set the motor angle
+  _pub_motor.angle = control_output;
+  ROS_INFO("angular(original): %f", control_output);
+
+  // Constrain the angle to the vehicle's steering limits
+  if (_pub_motor.angle > 0.3) {
+    _pub_motor.angle = 0.3;
+  }
+  if (_pub_motor.angle < -0.3) {
+    _pub_motor.angle = -0.3;
+  }
+
+  ROS_INFO("angular(published): %f", _pub_motor.angle);
+  ROS_INFO("linear(published): %f", _pub_motor.speed);
+  ROS_INFO("=====================");
   return _pub_motor;
 }
